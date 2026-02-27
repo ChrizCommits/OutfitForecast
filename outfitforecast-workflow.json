@@ -1,0 +1,395 @@
+{
+  "name": "WeatherCast",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 5
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "e0a34a82-98a7-4f4a-8fea-7b206fe34f5c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "cityName": "Berlin, de",
+        "language": "de"
+      },
+      "type": "n8n-nodes-base.openWeatherMap",
+      "typeVersion": 1,
+      "position": [
+        192,
+        0
+      ],
+      "id": "82c5326e-5312-40f8-9b02-51cf364896c3",
+      "name": "OpenWeatherMap",
+      "credentials": {
+        "openWeatherMapApi": {
+          "id": "efbAh2lmKpqXHkdj",
+          "name": "OpenWeatherMap account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Create a structured and concise summary of tomorrow’s weather.\n\nBegin with one sentence that contains only the most important takeaway (e.g., raincoat for rain or shorts for heat) — nothing unnecessary, just whether long/short pants, a jacket, etc. should be worn.\n\nOnly include essential details in the outfit description, such as color or waterproof quality. No unnecessary additions (e.g., breathable, vegan, grip, structured). First list **MUST HAVES**, then **OPTIONAL**.\n\nStart with the Midday Outfit, then specify what needs to be added, removed, or swapped at certain times. Use:\n\n* for added items\n\n- for removed items\n  ⇄ for a swap\n\nOnly list clothing items — no adjustments like “zip the jacket” or “put up the hood.” Be precise — do not use vague terms like “thermal layer,” but clearly state the exact type of clothing and its color.\n\nExample:\n“10 AM: Blue cropped top (30°C in the sun)\n11 AM: ⇄ black shorts\n12 PM (rain until 1 PM): + Thick red rain jacket\n1 PM: Long brown cotton fleece leggings”\n\nEnd with a cool, motivating quote in English — completely random and unrelated to the weather.\n\nUse the provided outfits: {{ $json.weatherDetails }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1232,
+        -128
+      ],
+      "id": "938cf7e0-2b52-4af8-b5ae-a287e48de410",
+      "name": "Generate Outfit Summary",
+      "credentials": {
+        "openAiApi": {
+          "id": "e9leTLK4kcmTVtjk",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "model": "gpt-image-1",
+        "prompt": "=A young woman with long dark-brown hair and the hairstyle specified below:\n\nOn the left side, she is wearing the Midday Outfit (including everything listed under MUST HAVE and OPTIONAL).\n\nOn the right side, she is wearing the Morning/Evening Outfit, where the outfit on the left is enhanced with additional details and extra layers suitable for cooler temperatures: {{ $json.weatherDetails }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1296,
+        208
+      ],
+      "id": "fba2ed3b-9245-4f4d-8571-3a444dd783de",
+      "name": "Generate outfit image",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "openAiApi": {
+          "id": "e9leTLK4kcmTVtjk",
+          "name": "OpenAi account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "An error occured - image could not be created!"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=**Perfect Outfit**\n\nStay below 4000 characters: Use the weather data to suggest an outfit for tomorrow for a pretty young woman with long dark-brown hair & blue eyes. Don't give options, instead choose the most suitable for the weather. If it rains, I don't only want to rely on an umbrella. For cool weather, always prioritize warmth and make sure the outfit is truly protective for spending 2 hours outside.\n\n1. Midday Outfit\nDescribe MUST HAVES that she should wear at midday according to the weather. Then OPTIONAL things (like the hairstyle or accessories such as a bag). Be sure to change the outfit style, hairstyle and accessories every day.\n\n2. Morning/Evening Outfit\nUse the midday outfit for the morning/evening outfit. Since it might be cooler, you need to adjust to the temperature and weather by adding extra layers, accessories or by swapping clothes (e.g. swap to pants if shorts would be too cold). Only swap what must be swapped to fit to the weather (e.g. the bag or hair don't need a swap), list no optional items and not what's the same like the midday outfit.\n\nA modern look, vegan - never eco-like (no wide leg pants like culotte or palazzo and no heels/wedges), not synthetic (cotton fleece instead of fleece..) and never write about sunglasses/sunscreen/necklace. You don’t have to explain that something is made of a cotton like jeans or t-shirts unless it’s unusual or important for the outfit.\n\nWeather\nTemperature: {{ $node[\"OpenWeatherMap\"].json.main.temp }}, mid day {{ $('Schedule Trigger').item.json['Readable date'] }}, feels like {{ $node[\"OpenWeatherMap\"].json.main.feels_like }} °C\nDescription: {{ $node[\"OpenWeatherMap\"].json.weather[0].description}}\nCloudiness: {{ $node[\"OpenWeatherMap\"].json.clouds }}\nRain: {{ $node[\"OpenWeatherMap\"].json.rain }}\nHumidity: {{ $node[\"OpenWeatherMap\"].json.main.humidity }}\nWindspeed: {{ $node[\"OpenWeatherMap\"].json.wind.speed }}\nSunrise: {{ $node[\"OpenWeatherMap\"].json.sys.sunrise }}\nSunset: {{ $node[\"OpenWeatherMap\"].json.sys.sunset }}\n\nCheck online whether the weather values are accurate or whether it is warmer in direct sunlight, and always state the exact time when something changes. Describe precisely, not just “thermal layer,” but specify the exact type of clothing and its color. Present it simply using + for added items, - for removed items, and ⇄ for swaps. Socks are never swapped.\n\nExample:\n\"10 AM: Blue cropped top (30°C in the sun)\n11 AM: ⇄ Black shorts\n12 PM: + Thick red rain jacket (Rain until 1 PM)\n1 PM: Long brown leggings\""
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "86673bad-1531-47b6-a48b-0ef336a29c66",
+      "name": "Generate Weather Info Text",
+      "credentials": {
+        "openAiApi": {
+          "id": "e9leTLK4kcmTVtjk",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "39690af3-6c79-4b2a-ac8f-d19b63dc2fff",
+              "name": "weatherDetails",
+              "value": "={{$json.output[0].content[0].text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        0
+      ],
+      "id": "af7254dd-7e34-44ef-b45b-e9ead09aa625",
+      "name": "Save WeatherInfo in variable"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4d456ecd-00e8-417f-904a-f177f81b49ec",
+              "leftValue": "={{ $json.weatherDetails }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        -80
+      ],
+      "id": "3c647b31-889a-4e51-8ba5-b5d0e1f43b44",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "YOUR_CHAT_ID",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1568,
+        112
+      ],
+      "id": "68a68a1f-3e10-41d3-83a1-424acc19fea0",
+      "name": "Send outfit image to user",
+      "webhookId": "a2e1cf9a-39e4-4bd9-9ef5-0156be2ef8d7",
+      "credentials": {
+        "telegramApi": {
+          "id": "XhNmgWiQAxX2t4L5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.output[0].content[0].text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1568,
+        -128
+      ],
+      "id": "e98c815e-7756-4e8f-8222-58f48862ba07",
+      "name": "Send summary to user",
+      "webhookId": "87ba72fe-faa8-4e77-a5ad-7998e168590e",
+      "credentials": {
+        "telegramApi": {
+          "id": "XhNmgWiQAxX2t4L5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=Today’s outfit image couldn’t be generated. If the issue continues, please contact support.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1568,
+        288
+      ],
+      "id": "62b60941-5277-4e80-bd51-1906ebd23579",
+      "name": "Send error: image failed",
+      "webhookId": "87ba72fe-faa8-4e77-a5ad-7998e168590e",
+      "credentials": {
+        "telegramApi": {
+          "id": "XhNmgWiQAxX2t4L5",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=An error occurred — no outfit recommendation could be generated for today. If the issue persists, please contact support.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        16
+      ],
+      "id": "3e5492c3-cadb-4dac-bcff-c166f57018d6",
+      "name": "Send error: no recommendation",
+      "credentials": {
+        "telegramApi": {
+          "id": "XhNmgWiQAxX2t4L5",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenWeatherMap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenWeatherMap": {
+      "main": [
+        [
+          {
+            "node": "Generate Weather Info Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Outfit Summary": {
+      "main": [
+        [
+          {
+            "node": "Send summary to user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate outfit image": {
+      "main": [
+        [
+          {
+            "node": "Send outfit image to user",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send error: image failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Weather Info Text": {
+      "main": [
+        [
+          {
+            "node": "Save WeatherInfo in variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save WeatherInfo in variable": {
+      "main": [
+        [
+          {
+            "node": "Generate outfit image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Generate Outfit Summary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send error: no recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send summary to user": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ddf4c9a0-f861-41cb-8554-dd73f0a7cd3d",
+  "id": "CX6lgqnlJ7fUQAl4",
+  "tags": []
+}
